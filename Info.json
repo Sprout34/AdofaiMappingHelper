@@ -1,0 +1,9 @@
+{
+  "Id": "MappingHelper",
+  "DisplayName": "MappingHelper",
+  "Author": "Sprout",
+  "Version": "$VERSION",
+  "ManagerVersion": "0.22.14.0",
+  "AssemblyName": "MappingHelper.dll",
+  "EntryMethod": "MappingHelper.Startup.Load"
+}

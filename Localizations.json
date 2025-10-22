@@ -1,0 +1,26 @@
+{
+    "mh.features.option": {
+        "English": "features option",
+        "ChineseSimplified": "功能选项"
+    },
+    "enum.{MappingHelper+Features}.TrackDisappearAnimation": {
+        "English": "TrackDisappearAnimation",
+        "ChineseSimplified": "轨道消失动画"
+    },
+    "enum.{MappingHelper+Features}.TrackAppearAnimation": {
+        "English": "TrackAppearAnimation",
+        "ChineseSimplified": "轨道出现动画"
+    },
+    "enum.{MappingHelper+Features}.Decoration3D": {
+        "English": "Decoration3D",
+        "ChineseSimplified": "3D装饰"
+    },
+    "enum.{MappingHelper+Features}.DynamicDecoration": {
+        "English": "DynamicDecoration",
+        "ChineseSimplified": "动态装饰"
+    },
+    "enum.{MappingHelper+Features}.MultipleTracks": {
+        "English": "MultipleTracks",
+        "ChineseSimplified": "多轨道生成"
+    }
+}
