@@ -877,6 +877,10 @@ namespace MappingHelper
                                 dataPanel["previewMagicShape"] = false;
                                 (properties["previewMagicShape"].control as PropertyControl_Bool).value = false;
                                 Main.showingFakeFloor = false;
+
+                                int offset = (affectTileRangeTo - affectTileRangeFrom) * (vertexCount - 1);
+                                OffsetFloorIDsInEvents(affectTileRangeTo, offset);
+
                                 break;
                             case MagicShapeFeature.SynchronizeBpm:
                                 float trueBpm;
@@ -1253,6 +1257,25 @@ namespace MappingHelper
         public static void ExtraVideo(MonoBehaviour runner, string videoPath, string outputFolder,ImageFormat format)
         {
             runner.StartCoroutine(new ExtraVideo().ExtractFramesCoroutine(videoPath, outputFolder,format));
+        }
+
+        public static void OffsetFloorIDsInEvents(int startFloorID, int offset)
+        {
+            List<LevelEvent>[] array = new List<LevelEvent>[]
+            {
+            scnEditor.instance.events,
+            scnEditor.instance.decorations
+            };
+            for (int i = 0; i < array.Length; i++)
+            {
+                foreach (LevelEvent levelEvent in array[i])
+                {
+                    if (levelEvent.floor > startFloorID)
+                    {
+                        levelEvent.floor += offset;
+                    }
+                }
+            }
         }
     }
 

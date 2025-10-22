@@ -427,3 +427,9 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /UnityProject/[Aa]ssets/[Ss]treamingAssets/aa.meta
 /UnityProject/[Aa]ssets/[Ss]treamingAssets/aa/*
+
+#自己设置的忽略文件
+*.txt
+*.log
+*.json
+*.bat
