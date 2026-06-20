@@ -1438,7 +1438,6 @@ namespace MappingHelper
                         List<float> newTrack_GT = new List<float>();
                         List<bool> newTrack_GT_goTwirl = new List<bool>();
                         List<int> addTwirlToTheseTrack = new List<int>();
-                        isCCW_GT = goTwirl[0] ? !isCCW_GT : isCCW_GT;
 
                         for (int i = 0; i < generationCount; i++)
                         {
@@ -1448,13 +1447,15 @@ namespace MappingHelper
 
                         for (int i = 0; i < newTrack_GT.Count; i++)
                         {
-                            newTrack_GT[i] = correctDirection(tail_GT + (isCCW_GT ? newTrack_GT[i] : -newTrack_GT[i]));
-                            tail_GT = (newTrack_GT[i] + 180) % 360;
-                            if(newTrack_GT_goTwirl[i])
+                            if (newTrack_GT_goTwirl[i])
                             {
                                 addTwirlToTheseTrack.Add(affectTileRangeTo + 1 + i);
                                 isCCW_GT = !isCCW_GT;
                             }
+
+
+                            newTrack_GT[i] = correctDirection(tail_GT + (isCCW_GT ? newTrack_GT[i] : -newTrack_GT[i]));
+                            tail_GT = (newTrack_GT[i] + 180) % 360;
                         }
                         OffsetFloorIDsInEvents(affectTileRangeTo, newTrack_GT.Count);
                         scnEditor.instance.levelData.angleData.InsertRange(affectTileRangeTo + 1, newTrack_GT);

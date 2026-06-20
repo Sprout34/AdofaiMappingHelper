@@ -1007,7 +1007,6 @@ namespace MappingHelper
 
                             List<float> newTrack_GT = new List<float>();
                             List<bool> newTrack_GT_goTwirl = new List<bool>();
-                            isCCW_GT = goTwirl[0] ? !isCCW_GT : isCCW_GT;
 
                             for (int i = 0; i < generationCount; i++)
                             {
@@ -1017,6 +1016,12 @@ namespace MappingHelper
 
                             for (int i = 0; i < newTrack_GT.Count; i++)
                             {
+                                if (newTrack_GT_goTwirl[i])
+                                {
+                                    isCCW_GT = !isCCW_GT;
+                                    isCCW_GT_First = !isCCW_GT_First;
+                                }
+
                                 newTrack_GT[i] = correctDirection(tail_GT + (isCCW_GT ? newTrack_GT[i] : -newTrack_GT[i]));
                                 tail_GT = (newTrack_GT[i] + 180) % 360;
 
@@ -1034,8 +1039,6 @@ namespace MappingHelper
                                 {
                                     floor.floorIcon = FloorIcon.Swirl;
                                     floor.isSwirl = true;
-                                    isCCW_GT = !isCCW_GT;
-                                    isCCW_GT_First = !isCCW_GT_First;
                                     floor.isCCW = isCCW_GT_First;
                                 }
 
