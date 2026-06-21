@@ -727,7 +727,7 @@ namespace MappingHelper
                 }
 
                 FieldInfo ownerField = AccessTools.Field(typeof(BrowseButton), "owner");
-                PropertyControl_File owner = (PropertyControl_File)ownerField.GetValue(__instance);
+                PropertyControl owner = (PropertyControl)ownerField.GetValue(__instance);
 
                 ADOFAI.FileType fileType = owner.propertyInfo.fileType;
 
@@ -741,6 +741,10 @@ namespace MappingHelper
                     string path = FileBrowser.PickFolder(Persistence.GetLastUsedFolder(),title:Main.Localizations.GetValue("mh.selectDirectory"));
                     string directoryName = Path.GetFileNameWithoutExtension(path);
                     string levelDirectory = Path.GetDirectoryName(instance.levelPath);
+                    if (string.IsNullOrEmpty(levelDirectory))
+                    {
+                        return false;
+                    }
                     string targetDir = Path.Combine(levelDirectory, directoryName);
                     string sourceDir = path;
                     if (!Directory.Exists(targetDir))
@@ -768,11 +772,21 @@ namespace MappingHelper
                     }
 
                     LevelEvent selectedEvent2 = owner.propertiesPanel.inspectorPanel.selectedEvent;
-                    owner.browseButton.filename = directoryName;
-                    selectedEvent2[owner.propertyInfo.name] = owner.browseButton.filename;
-                    owner.inputField.text = owner.browseButton.filename;
-                    owner.ToggleOthersEnabled();
 
+                    //owner.browseButton.filename = directoryName;
+                    FieldInfo filenameField = AccessTools.Field(typeof(BrowseButton), "filename");
+                    filenameField.SetValue(__instance, directoryName);
+
+                    //selectedEvent2[owner.propertyInfo.name] = owner.browseButton.filename;
+                    selectedEvent2[owner.propertyInfo.name] = directoryName;
+
+                    //owner.inputField.text = owner.browseButton.filename;
+                    FieldInfo inputFieldField = AccessTools.Field(typeof(BrowseButton), "inputField");
+                    TMP_InputField inputField = (TMP_InputField)inputFieldField.GetValue(__instance);
+                    inputField.text = directoryName;
+
+                    owner.ToggleOthersEnabled();
+                    Main.activeChilden();
                     return false;
                 }
 
@@ -800,19 +814,19 @@ namespace MappingHelper
                         return false;
                     }
 
-                    //string path = Uri.UnescapeDataString(paths[0]);
+                    LevelEvent selectedEvent2 = owner.propertiesPanel.inspectorPanel.selectedEvent;
 
-                    //FieldInfo filenameField = AccessTools.Field(typeof(PropertyControl_File), "filename");
-                    //LevelEvent selectedEvent2 = __instance.propertiesPanel.inspectorPanel.selectedEvent;
-                    //filenameField.SetValue(__instance, path);
-                    //selectedEvent2[__instance.propertyInfo.name] = path;
-                    //__instance.inputField.text = path;
-                    //var ToggleOthersEnabledMethod = AccessTools.Method(typeof(PropertyControl_File).BaseType, "ToggleOthersEnabled");
-                    //ToggleOthersEnabledMethod.Invoke(__instance, null);
+                    FieldInfo filenameField = AccessTools.Field(typeof(BrowseButton), "filename");
+                    filenameField.SetValue(__instance, filename);
 
-                    //var processMethod = AccessTools.Method(typeof(PropertyControl_File), "ProcessFile");
-                    //processMethod.Invoke(__instance, new object[] { "Show Me You Secret", (ADOFAI.FileType)FileTypeExtension.TTF });
+                    FieldInfo inputFieldField = AccessTools.Field(typeof(BrowseButton), "inputField");
+                    TMP_InputField inputField = (TMP_InputField)inputFieldField.GetValue(__instance);
+                    inputField.text = filename;
 
+                    selectedEvent2[owner.propertyInfo.name] = filename;
+
+                    owner.ToggleOthersEnabled();
+                    Main.activeChilden();
                     return false;
                 }
 
