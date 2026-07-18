@@ -802,7 +802,7 @@ namespace MappingHelper
                     string filename = RDEditorUtils.ShowFileSelector(
                         Main.Localizations.GetValue("mh.selectFont"),
                         "Font Files",
-                        new string[] { "ttf", "otf" },
+                        new string[] { "ttf", "otf", "ttc"},
                         "Save the level first",
                         -1L  // 无大小限制
                     );
