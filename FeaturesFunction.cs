@@ -90,6 +90,7 @@ namespace MappingHelper
                 FileType fileType = dataPanel.Get<FileType>("FileType");
 
                 string levelPath = scnEditor.instance.customLevel.levelPath;
+                string levelDirectory = Path.GetDirectoryName(levelPath);
 
                 string directoryPath = dataPanel.Get<string>("selectDirectory");
                 string imagePath = dataPanel.Get<string>("selectImage");
@@ -1256,17 +1257,18 @@ namespace MappingHelper
                                 }
                                 else
                                 {
-                                    string ttfPath = useCustomFont ? fontPath : Path.Combine(Main.ModEntry.Path, "Fonts", $"{font.ToString()}.ttf");
+                                    string ttfPath = useCustomFont ? Path.Combine(levelDirectory, fontPath) : Path.Combine(Main.ModEntry.Path, "Fonts", $"{font.ToString()}.ttf");
                                     // 检查文件是否存在
                                     if (string.IsNullOrEmpty(ttfPath) || !File.Exists(ttfPath))
                                     {
+                                        Main.Logger.Error($"Font file not found: {ttfPath}");
                                         Popup.ShowMessage(Main.Localizations.GetValue("mh.fileDoesNotExist"));
                                         return;
                                     }
 
                                     // 检查扩展名
                                     string ext = Path.GetExtension(ttfPath).ToLower();
-                                    if (ext != ".ttf" && ext != ".otf")
+                                    if (ext != ".ttf" && ext != ".otf"  && ext != ".ttc")
                                     {
                                         Popup.ShowMessage(Main.Localizations.GetValue("mh.pleaseInputValidFontFile"));
                                         return;
@@ -1357,9 +1359,9 @@ namespace MappingHelper
                                     levelEventMD3["duration"] = lyricDisappearDuration;
                                     levelEventMD3["tag"] = $"{tag}_{lyricList[i]}_{i + 1}";
                                     levelEventMD3["relativeTo"] = DecPlacementType.Tile;
-                                    levelEventMD3["positionOffset"] = new Vector2(dataPanel.disabled["lyricDisappearXPosOffsetRange"] ? float.NaN : UnityEngine.Random.Range(xPosOffsetRange.Item1, xPosOffsetRange.Item2), dataPanel.disabled["lyricDisappearYPosOffsetRange"] ? float.NaN : UnityEngine.Random.Range(yPosOffsetRange.Item1, yPosOffsetRange.Item2));
-                                    levelEventMD3["pivotOffset"] = new Vector2(dataPanel.disabled["lyricDisappearXPivotOffsetRange"] ? float.NaN : UnityEngine.Random.Range(xPivotOffsetRange.Item1, xPivotOffsetRange.Item2), dataPanel.disabled["lyricDisappearYPivotOffsetRange"] ? float.NaN : UnityEngine.Random.Range(yPivotOffsetRange.Item1, yPivotOffsetRange.Item2));
-                                    levelEventMD3["parallaxOffset"] = new Vector2(dataPanel.disabled["lyricDisappearXParallaxOffsetRange"] ? float.NaN : UnityEngine.Random.Range(xParallaxOffsetRange.Item1, xParallaxOffsetRange.Item2), dataPanel.disabled["lyricDisappearYParallaxOffsetRange"] ? float.NaN : UnityEngine.Random.Range(yParallaxOffsetRange.Item1, yParallaxOffsetRange.Item2));
+                                    levelEventMD3["positionOffset"] = new Vector2(dataPanel.disabled["lyricDisappearXPosOffsetRange"] ? float.NaN : UnityEngine.Random.Range(lyricDisappearXPosOffsetRange.Item1, lyricDisappearXPosOffsetRange.Item2), dataPanel.disabled["lyricDisappearYPosOffsetRange"] ? float.NaN : UnityEngine.Random.Range(lyricDisappearYPosOffsetRange.Item1, lyricDisappearYPosOffsetRange.Item2));
+                                    levelEventMD3["pivotOffset"] = new Vector2(dataPanel.disabled["lyricDisappearXPivotOffsetRange"] ? float.NaN : UnityEngine.Random.Range(lyricDisappearXPivotOffsetRange.Item1, lyricDisappearXPivotOffsetRange.Item2), dataPanel.disabled["lyricDisappearYPivotOffsetRange"] ? float.NaN : UnityEngine.Random.Range(lyricDisappearYPivotOffsetRange.Item1, lyricDisappearYPivotOffsetRange.Item2));
+                                    levelEventMD3["parallaxOffset"] = new Vector2(dataPanel.disabled["lyricDisappearXParallaxOffsetRange"] ? float.NaN : UnityEngine.Random.Range(lyricDisappearXPivotOffsetRange.Item1, lyricDisappearXPivotOffsetRange.Item2), dataPanel.disabled["lyricDisappearYParallaxOffsetRange"] ? float.NaN : UnityEngine.Random.Range(lyricDisappearYPivotOffsetRange.Item1, lyricDisappearYPivotOffsetRange.Item2));
                                     levelEventMD3["rotationOffset"] = UnityEngine.Random.Range(lyricDisappearRotationOffsetRange.Item1, lyricDisappearRotationOffsetRange.Item2);
                                     levelEventMD3["scale"] = dataPanel.disabled["lyricDisappearScaleRange"] ? new Vector2(100f, 100f) : new Vector2(scale2, scale2);
                                     levelEventMD3["opacity"] = dataPanel.disabled["lyricDisappearOpacity"] ? 100f : lyricDisappearOpacity;
@@ -1403,6 +1405,8 @@ namespace MappingHelper
                         //    (properties["lyric"].control as PropertyControl_Text).text = lyric;
                         //    dataPanel["lyric"] = lyric;
                         //}
+
+                        editor.ApplyEventsToFloors();
                         editor.RemakePath(true, true);
                         break;
                     case Features.GenerateTrack:
