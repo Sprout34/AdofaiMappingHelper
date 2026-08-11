@@ -1,6 +1,6 @@
 ﻿namespace MappingHelper
 {
-    internal enum ImageFormat
+    public enum ImageFormat
     {
         PNG,
         JPG

@@ -11,7 +11,7 @@ namespace MappingHelper.PropertyCollection
             Float, Int, String, Vector2
         }
 
-        public Property_InputField(string name, InputType type, object value_default = null, object min = null, object max = null, string unit = null, string key = null, bool canBeDisabled = false, bool startEnabled = false, Dictionary<string, string> enableIf = null, Dictionary<string, string> disableIf = null)
+        public Property_InputField(string name, InputType type, object value_default = null, object min = null, object max = null, string unit = null, string key = null, bool canBeDisabled = false, bool startEnabled = false, Dictionary<string, string> enableIf = null, Dictionary<string, string> disableIf = null, bool slider = false)
             : base(name, key, canBeDisabled, startEnabled, enableIf, disableIf)
         {
             data["type"] = Enum.GetName(typeof(InputType), type);
@@ -22,11 +22,13 @@ namespace MappingHelper.PropertyCollection
                     data["default"] = Convert.ToSingle(value_default);
                     data["min"] = min != null ? Convert.ToSingle(min) : float.NegativeInfinity;
                     data["max"] = max != null ? Convert.ToSingle(max) : float.PositiveInfinity;
+                    data["slider"] = slider;
                     break;
                 case InputType.Int:
                     data["default"] = Convert.ToInt32(value_default);
                     data["min"] = min != null ? Convert.ToInt32(min) : int.MinValue;
                     data["max"] = max != null ? Convert.ToInt32(max) : int.MaxValue;
+                    data["slider"] = slider;
                     break;
                 case InputType.String:
                     data["default"] = value_default as string ?? string.Empty;

@@ -70,6 +70,22 @@ namespace MappingHelper
                     key: "mh.yPosOffsetRange"
                 ),
                 new PropertyCollection.Property_FloatPair(
+                    name: "xParallaxOffsetRange",
+                    value_default: new UnityEngine.Vector2(0, 0),
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    isRange: false,
+                    key: "mh.xParallaxOffsetRange"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "yParallaxOffsetRange",
+                    value_default: new UnityEngine.Vector2(0, 0),
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    isRange: false,
+                    key: "mh.yParallaxOffsetRange"
+                ),
+                new PropertyCollection.Property_FloatPair(
                     name: "rotationOffsetRange",
                     value_default: new UnityEngine.Vector2(0, 0),
                     canBeDisabled: true,
@@ -124,7 +140,8 @@ namespace MappingHelper
                 new PropertyCollection.Property_Button(
                     name: "createButton", 
                     action: FeaturesFunction.create, 
-                    key: "mh.create"),
+                    key: "mh.create"
+                ),
                 new PropertyCollection.Property_InputField(
                     name: "scaleRevertTo",
                     type: PropertyCollection.Property_InputField.InputType.Float,
@@ -276,10 +293,12 @@ namespace MappingHelper
                 ),
                 new PropertyCollection.Property_Color(
                     name: "colorStartValue",
+                    usesAlpha: true,
                     key: "mh.colorStartValue"
                 ),
                 new PropertyCollection.Property_Color(
                     name: "colorEndValue",
+                    usesAlpha: true,
                     key: "mh.colorEndValue"
                 ),
                 new PropertyCollection.Property_InputField(
@@ -355,9 +374,22 @@ namespace MappingHelper
                 new PropertyCollection.Property_InputField(
                     name: "bpmValue",
                     type: PropertyCollection.Property_InputField.InputType.Float,
-                    min: 1,
+                    min: 0.001,
+                    max: 10000.0,
+                    unit: "bpm",
                     value_default: 100,
+                    enableIf: new Dictionary<string, string>() { { "speedTypeMH", "Bpm" } },
                     key: "mh.bpmValue"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "multiplierValue",
+                    type: PropertyCollection.Property_InputField.InputType.Float,
+                    min: 1.0E-7,
+                    max: 128.0,
+                    unit: "X",
+                    value_default: 1,
+                    enableIf: new Dictionary<string, string>() { { "speedTypeMH", "Multiplier" } },
+                    key: "mh.multiplierValue"
                 ),
                 new PropertyCollection.Property_InputField(
                     name: "magicShapeRotateValue",
@@ -411,7 +443,7 @@ namespace MappingHelper
                 ),
                 new PropertyCollection.Property_Enum<AffectAt>(
                     name: "affectAt",
-                    value_default: AffectAt.SpecificRange,
+                    value_default: AffectAt.SelectedTiles,
                     key: "mh.affectAt"
                 ),
                 new PropertyCollection.Property_InputField(
@@ -453,10 +485,295 @@ namespace MappingHelper
                     name: "eventDistribution",
                     value_default: TrackDistribution.Distributed,
                     key: "mh.eventDistribution"
+                ),
+                new PropertyCollection.Property_Enum<SpeedTypeMH>(
+                    name: "speedTypeMH",
+                    value_default: SpeedTypeMH.Bpm,
+                    key: "mh.speedTypeMH"
+                ),
+                new PropertyCollection.Property_Bool(
+                    name: "durationMatchBpm",
+                    key: "mh.durationMatchBpm"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "lyric",
+                    type: PropertyCollection.Property_InputField.InputType.String,
+                    value_default: "",
+                    key: "mh.lyric"
+                ),
+                new PropertyCollection.Property_Enum<Delimiter>(
+                    name: "delimiter",
+                    value_default: Delimiter.CharacterByCharacter,
+                    key: "mh.delimiter"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "xPivotOffsetRange",
+                    value_default: new UnityEngine.Vector2(0, 0),
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    isRange: false,
+                    key: "mh.xPivotOffsetRange"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "yPivotOffsetRange",
+                    value_default: new UnityEngine.Vector2(0, 0),
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    isRange: false,
+                    key: "mh.yPivotOffsetRange"
+                ),
+                new PropertyCollection.Property_Bool(
+                    name: "lyricDisappearAnimation",
+                    key: "mh.lyricDisappearAnimation"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "lyricDisappearAfter",
+                    type: PropertyCollection.Property_InputField.InputType.Float,
+                    value_default: 1,
+                    min: 0,
+                    unit: "beats",
+                    key: "editor.lyricDisappearAfter"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "lyricDisappearDuration",
+                    type: PropertyCollection.Property_InputField.InputType.Float,
+                    value_default: 1,
+                    min: 0,
+                    unit: "beats",
+                    key: "editor.lyricDisappearDuration"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "lyricDisappearXPosOffsetRange",
+                    value_default: new UnityEngine.Vector2(0, 0),
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    isRange: false,
+                    key: "mh.lyricDisappearXPosOffsetRange"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "lyricDisappearYPosOffsetRange",
+                    value_default: new UnityEngine.Vector2(0, 0),
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    isRange: false,
+                    key: "mh.lyricDisappearYPosOffsetRange"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "lyricDisappearXPivotOffsetRange",
+                    value_default: new UnityEngine.Vector2(0, 0),
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    isRange: false,
+                    key: "mh.lyricDisappearXPivotOffsetRange"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "lyricDisappearYPivotOffsetRange",
+                    value_default: new UnityEngine.Vector2(0, 0),
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    isRange: false,
+                    key: "mh.lyricDisappearYPivotOffsetRange"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "lyricDisappearRotationOffsetRange",
+                    value_default: new UnityEngine.Vector2(0, 0),
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    isRange: false,
+                    key: "mh.lyricDisappearRotationOffsetRange"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "lyricDisappearScaleRange",
+                    value_default: new UnityEngine.Vector2(100, 100),
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    isRange: false,
+                    key: "mh.lyricDisappearScaleRange"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "lyricDisappearOpacity",
+                    type: PropertyCollection.Property_InputField.InputType.Float,
+                    value_default: 0,
+                    unit: "%",
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    key: "editor.opacity"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "lyricDisappearParallaxRange",
+                    value_default: new UnityEngine.Vector2(0f, 0f),
+                    canBeDisabled: true,
+                    startEnabled: false,
+                    isRange: false,
+                    key: "mh.lyricDisappearParallaxRange"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "lyricDisappearXParallaxOffsetRange",
+                    value_default: new UnityEngine.Vector2(0, 0),
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    isRange: false,
+                    key: "mh.lyricDisappearXParallaxOffsetRange"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "lyricDisappearYParallaxOffsetRange",
+                    value_default: new UnityEngine.Vector2(0, 0),
+                    canBeDisabled: true,
+                    startEnabled: true,
+                    isRange: false,
+                    key: "mh.lyricDisappearYParallaxOffsetRange"
+                ),
+                new PropertyCollection.Property_Enum<LyricGenerationMode>(
+                    name: "lyricGenerationMode",
+                    value_default: LyricGenerationMode.GenerateAllAtOnce,
+                    key: "mh.lyricGenerationMode"
+                ),
+                new PropertyCollection.Property_Ease(
+                    name: "lyricDisappearEase",
+                    key: "editor.ease"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "positionInterval",
+                    value_default: new UnityEngine.Vector2(1f, 0f),
+                    type: PropertyCollection.Property_InputField.InputType.Vector2,
+                    key: "mh.positionInterval"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "timeInterval",
+                    type: PropertyCollection.Property_InputField.InputType.Float,
+                    value_default: 45,
+                    min: 0,
+                    unit: "°",
+                    enableIf: new Dictionary<string, string>() { { "lyricGenerationMode", "GenerateAllAtOnce" } },
+                    key: "mh.timeInterval"
+                ),
+                new PropertyCollection.Property_Enum<LyricGeneratedAs>(
+                    name: "lyricGeneratedAs",
+                    value_default: LyricGeneratedAs.BuiltInText ,
+                    key: "mh.lyricGeneratedAs"
+                ),
+                new PropertyCollection.Property_Bool(
+                    name: "useCustomFont",
+                    value_default: false,
+                    key: "mh.useCustomFont"
+                ),
+                new PropertyCollection.Property_File(
+                    name: "selectFont",
+                    fileType: "TTF",
+                    enableIf: new Dictionary<string, string>() { { "useCustomFont", "Enabled" } },
+                    key: "mh.selectFont"
+                ),
+                new PropertyCollection.Property_Enum<Font>(
+                    name: "font",
+                    value_default: Font.Arial,
+                    enableIf: new Dictionary<string, string>() { { "useCustomFont", "Disable" } },
+                    key: "mh.font"
+                ),
+                new PropertyCollection.Property_Bool(
+                    name: "useStroke",
+                    key: "mh.useStroke"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "strokeSize",
+                    type: PropertyCollection.Property_InputField.InputType.Int,
+                    min: 0,
+                    max: 100,
+                    slider: true,
+                    value_default: 1,
+                    key: "mh.strokeSize"
+                ),
+                new PropertyCollection.Property_Color(
+                    name: "strokeColor",
+                    usesAlpha: true,
+                    value_default: UnityEngine.Color.black,
+                    key: "mh.strokeColor"
+                ),
+                new PropertyCollection.Property_Bool(
+                    name: "useShadow",
+                    key: "mh.useShadow"
+                ),
+                new PropertyCollection.Property_FloatPair(
+                    name: "shadowOffset",
+                    value_default: new UnityEngine.Vector2(0, 0),
+                    isRange: false,
+                    key: "mh.shadowOffset"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "shadowSpread",
+                    type: PropertyCollection.Property_InputField.InputType.Int,
+                    min: 0,
+                    max: 100,
+                    slider: true,
+                    value_default: 1,
+                    key: "mh.shadowSpread"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "shadowDensity",
+                    type: PropertyCollection.Property_InputField.InputType.Float,
+                    min: 0f,
+                    max: 10f,
+                    slider: true,
+                    value_default: 5f,
+                    key: "mh.shadowDensity"
+                ),
+                new PropertyCollection.Property_Color(
+                    name: "shadowColor",
+                    usesAlpha: true,
+                    value_default: UnityEngine.Color.black,
+                    key: "mh.shadowColor"
+                ),
+                new PropertyCollection.Property_Bool(
+                    name: "useBlur",
+                    key: "mh.useBlur"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "blurSize",
+                    type: PropertyCollection.Property_InputField.InputType.Int,
+                    min: 0,
+                    max: 100,
+                    slider: true,
+                    value_default: 1,
+                    key: "mh.blurSize"
+                ),
+                new PropertyCollection.Property_Color(
+                    name: "blurColor",
+                    usesAlpha: true,
+                    value_default: UnityEngine.Color.white,
+                    key: "mh.blurColor"
+                ),
+                new PropertyCollection.Property_Color(
+                    name: "color",
+                    usesAlpha: true,
+                    value_default: UnityEngine.Color.white,
+                    key: "mh.color"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "trackAngleData",
+                    type: PropertyCollection.Property_InputField.InputType.String,
+                    value_default: "",
+                    key: "mh.trackAngleData"
+                ),
+                new PropertyCollection.Property_Bool(
+                    name: "previewTrack",
+                    key: "mh.previewTrack"
+                ),
+                new PropertyCollection.Property_InputField(
+                    name: "generationCount",
+                    type: PropertyCollection.Property_InputField.InputType.Int,
+                    min: 1,
+                    value_default: 4,
+                    key: "mh.generationCount"
+                ),
+                new PropertyCollection.Property_Note(
+                    name: "cleanInvalidFilesNote",
+                    key: "mh.cleanInvalidFilesNote"
+                ),
+                new PropertyCollection.Property_Button(
+                    name: "getAnglesOfSelectedTracksButton",
+                    action: FeaturesFunction.getAnglesOfSelectedTracks,
+                    key: "mh.getAnglesOfSelectedTracks"
                 )
             };
-
-
 
 
         public static List<string> TrackDisappearAnimationToActive { get;set; } = new List<string>()
@@ -468,6 +785,7 @@ namespace MappingHelper
                 "startTile",
                 "endTile",
                 "duration",
+                "durationMatchBpm",
                 "xPosOffsetRange",
                 "yPosOffsetRange",
                 "rotationOffsetRange",
@@ -487,6 +805,7 @@ namespace MappingHelper
                 "startTile",
                 "endTile",
                 "duration",
+                "durationMatchBpm",
                 "xPosOffsetRange",
                 "yPosOffsetRange",
                 "rotationOffsetRange",
@@ -646,7 +965,9 @@ namespace MappingHelper
                 "affectAt",
                 "FeaturesOption",
                 "magicShapeFeature",
+                "speedTypeMH",
                 "bpmValue",
+                "multiplierValue",
                 "twirlStyle",
                 "showedEvent",
                 "createButton",
@@ -692,6 +1013,209 @@ namespace MappingHelper
                 "opacity",
                 "angleOffset",
                 "ease",
+                "createButton",
+            };
+
+        public static List<string> LyricToActive { get; set; } = new List<string>()
+            {
+                "affectTileRangeFrom",
+                "affectTileRangeTo",
+                "affectAt",
+                "FeaturesOption",
+                "lyric",
+                "lyricGeneratedAs",
+                "positionInterval",
+                "delimiter",
+                //"lyricGenerationMode",
+                "timeInterval",
+                "duration",
+                "tag",
+                "xPosOffsetRange",
+                "yPosOffsetRange",
+                "xPivotOffsetRange",
+                "yPivotOffsetRange",
+                "rotationOffsetRange",
+                "scaleRange",
+                "scaleRevertTo",
+                "color",
+                "opacity",
+                "parallaxRange",
+                "parallaxRevertTo",
+                "xParallaxOffsetRange",
+                "yParallaxOffsetRange",
+                "angleOffset",
+                "ease",
+                "lyricDisappearAnimation",
+                "createButton",
+            };
+
+        public static List<string> LyricToActiveWithDisapperAnimation { get; set; } = new List<string>()
+            {
+                "affectTileRangeFrom",
+                "affectTileRangeTo",
+                "affectAt",
+                "FeaturesOption",
+                "lyric",
+                "lyricGeneratedAs",
+                "positionInterval",
+                "delimiter",
+                //"lyricGenerationMode",
+                "timeInterval",
+                "duration",
+                "tag",
+                "xPosOffsetRange",
+                "yPosOffsetRange",
+                "xPivotOffsetRange",
+                "yPivotOffsetRange",
+                "rotationOffsetRange",
+                "scaleRange",
+                "scaleRevertTo",
+                "color",
+                "opacity",
+                "parallaxRange",
+                "parallaxRevertTo",
+                "xParallaxOffsetRange",
+                "yParallaxOffsetRange",
+                "angleOffset",
+                "ease",
+                "lyricDisappearAnimation",
+                "lyricDisappearAfter",
+                "lyricDisappearDuration",
+                "lyricDisappearXPosOffsetRange",
+                "lyricDisappearYPosOffsetRange",
+                "lyricDisappearXPivotOffsetRange",
+                "lyricDisappearYPivotOffsetRange",
+                "lyricDisappearRotationOffsetRange",
+                "lyricDisappearScaleRange",
+                "lyricDisappearOpacity",
+                "lyricDisappearParallaxRange",
+                "lyricDisappearXParallaxOffsetRange",
+                "lyricDisappearYParallaxOffsetRange",
+                "lyricDisappearEase",
+                "createButton",
+            };
+
+
+
+        public static List<string> LyricToActive_Decoration { get; set; } = new List<string>()
+            {
+                "affectTileRangeFrom",
+                "affectTileRangeTo",
+                "affectAt",
+                "FeaturesOption",
+                "lyric",
+                "lyricGeneratedAs",
+                "useCustomFont",
+                "selectFont",
+                "font",
+                "useStroke",
+                "strokeSize",
+                "strokeColor",
+                "useShadow",
+                "shadowOffset",
+                "shadowSpread",
+                "shadowDensity",
+                "shadowColor",
+                "positionInterval",
+                "delimiter",
+                "timeInterval",
+                "duration",
+                "tag",
+                "xPosOffsetRange",
+                "yPosOffsetRange",
+                "xPivotOffsetRange",
+                "yPivotOffsetRange",
+                "rotationOffsetRange",
+                "scaleRange",
+                "scaleRevertTo",
+                "color",
+                "opacity",
+                "parallaxRange",
+                "parallaxRevertTo",
+                "xParallaxOffsetRange",
+                "yParallaxOffsetRange",
+                "angleOffset",
+                "ease",
+                "lyricDisappearAnimation",
+                "createButton",
+            };
+
+        public static List<string> LyricToActiveWithDisapperAnimation_Decoration { get; set; } = new List<string>()
+            {
+                "affectTileRangeFrom",
+                "affectTileRangeTo",
+                "affectAt",
+                "FeaturesOption",
+                "lyric",
+                "lyricGeneratedAs",
+                "useCustomFont",
+                "selectFont",
+                "font",
+                "useStroke",
+                "strokeSize",
+                "strokeColor",
+                "useShadow",
+                "shadowOffset",
+                "shadowSpread",
+                "shadowDensity",
+                "shadowColor",
+                "positionInterval",
+                "delimiter",
+                "timeInterval",
+                "duration",
+                "tag",
+                "xPosOffsetRange",
+                "yPosOffsetRange",
+                "xPivotOffsetRange",
+                "yPivotOffsetRange",
+                "rotationOffsetRange",
+                "scaleRange",
+                "scaleRevertTo",
+                "color",
+                "opacity",
+                "parallaxRange",
+                "parallaxRevertTo",
+                "xParallaxOffsetRange",
+                "yParallaxOffsetRange",
+                "angleOffset",
+                "ease",
+                "lyricDisappearAnimation",
+                "lyricDisappearAfter",
+                "lyricDisappearDuration",
+                "lyricDisappearXPosOffsetRange",
+                "lyricDisappearYPosOffsetRange",
+                "lyricDisappearXPivotOffsetRange",
+                "lyricDisappearYPivotOffsetRange",
+                "lyricDisappearRotationOffsetRange",
+                "lyricDisappearScaleRange",
+                "lyricDisappearOpacity",
+                "lyricDisappearParallaxRange",
+                "lyricDisappearXParallaxOffsetRange",
+                "lyricDisappearYParallaxOffsetRange",
+                "lyricDisappearEase",
+                "createButton",
+            };
+
+        public static List<string> GenerateTrackToActive { get; set; } = new List<string>()
+            {
+                "affectTileRangeFrom",
+                "affectTileRangeTo",
+                "affectAt",
+                "FeaturesOption",
+                "trackAngleData",
+                "getAnglesOfSelectedTracksButton",
+                "previewTrack",
+                "generationCount",
+                "createButton",
+            };
+
+        public static List<string> CleanInvalidFilesToActive { get; set; } = new List<string>()
+            {
+                "affectTileRangeFrom",
+                "affectTileRangeTo",
+                "affectAt",
+                "FeaturesOption",
+                "cleanInvalidFilesNote",
                 "createButton",
             };
     }

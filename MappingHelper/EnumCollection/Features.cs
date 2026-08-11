@@ -9,6 +9,9 @@
         DynamicDecoration,
         Decoration3D,
         MagicShape,
-        TrackSizeChange
+        TrackSizeChange,
+        Lyric,
+        GenerateTrack,
+        CleanInvalidFiles
     }
 }

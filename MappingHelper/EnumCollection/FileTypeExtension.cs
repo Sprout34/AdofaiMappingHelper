@@ -2,6 +2,7 @@
 {
     public enum FileTypeExtension
     {
-        Directory = 6
+        Directory = 6,
+        TTF = 7
     }
 }

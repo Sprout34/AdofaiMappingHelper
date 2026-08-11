@@ -433,3 +433,4 @@ crashlytics-build.properties
 *.log
 *.json
 *.bat
+*.sln

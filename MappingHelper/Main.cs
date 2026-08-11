@@ -14,9 +14,8 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using UnityModManagerNet;
-using static PauseMenu;
 
-// TODO: Rename this namespace to your mod's name.
+
 namespace MappingHelper
 {
     /// <summary>
@@ -34,6 +33,7 @@ namespace MappingHelper
         internal static bool showingFakeFloor = false;
         internal static bool affectAtPropertyHasBeenDisabled = false;
         internal static int lastSelectedFloorsCount = 0;
+        internal static bool initializeSomething = true;
 
         /// <summary>
         /// Whether the mod is enabled. This is useful to have as a global
@@ -50,6 +50,8 @@ namespace MappingHelper
 
         private static Harmony harmony;
 
+        public static UnityModManager.ModEntry ModEntry { get; private set; }
+
         /// <summary>
         /// Perform any initial setup with the mod here.
         /// </summary>
@@ -58,6 +60,7 @@ namespace MappingHelper
             Logger = modEntry.Logger;
             // Add hooks to UMM event methods
             modEntry.OnToggle = OnToggle;
+            ModEntry = modEntry;
             Localizations = new Localization(Path.Combine(modEntry.Path, "Localizations.json"));
             propertiesToActive = PrefabProperties.TrackDisappearAnimationToActive;
 
@@ -72,6 +75,12 @@ namespace MappingHelper
                 onFocused = () => {
                     NowIsOnFocused = true;
                     ShowOrHideFakeFloor();
+
+                    if (initializeSomething)
+                    {
+                        initializeLyricDecoration();
+                        initializeSomething = false;
+                    }
                 },
                 onUnFocused = () => {
                     NowIsOnFocused = false;
@@ -80,20 +89,33 @@ namespace MappingHelper
                 },
                 onChange = (levelEvent, key, oldValue, newValue) =>
                 {
-                    Features feature = (Features)levelEvent.data["FeaturesOption"];
-                    TrackFeatures trackFeatures = (TrackFeatures)levelEvent.data["TrackFeatures"];
-                    TrackAnimation trackAnimation = (TrackAnimation)levelEvent.data["TrackAnimation"];
-                    FileType fileType = (FileType)levelEvent.data["FileType"];
-                    MagicShapeFeature magicShapeFeature = (MagicShapeFeature)levelEvent.data["magicShapeFeature"];
-                    bool previewMagicShape = (bool)levelEvent.data["previewMagicShape"];
+                    Features feature = levelEvent.Get<Features>("FeaturesOption");
+                    TrackFeatures trackFeatures = levelEvent.Get<TrackFeatures>("TrackFeatures");
+                    TrackAnimation trackAnimation = levelEvent.Get<TrackAnimation>("TrackAnimation");
+                    FileType fileType = levelEvent.Get<FileType>("FileType");
+                    MagicShapeFeature magicShapeFeature = levelEvent.Get<MagicShapeFeature>("magicShapeFeature");
+                    bool previewMagicShape = levelEvent.Get<bool>("previewMagicShape");
+                    bool previewTrack = levelEvent.Get<bool>("previewTrack");
+                    bool lyricDisappearAnimation = levelEvent.Get<bool>("lyricDisappearAnimation");
+                    LyricGeneratedAs lyricGeneratedAs = levelEvent.Get<LyricGeneratedAs>("lyricGeneratedAs");
 
                     ShowOrHideFakeFloor();
 
-                    if (key.Equals("useReverseAngle") || key.Equals("affectTileRangeFrom") || key.Equals("affectTileRangeTo") || key.Equals("affectAt") || key.Equals("vertexCount"))
+                    if (key.Equals("useReverseAngle") || key.Equals("affectTileRangeFrom") || key.Equals("affectTileRangeTo") || key.Equals("affectAt") || key.Equals("vertexCount") || key.Equals("previewTrack") || key.Equals("generationCount") || key.Equals("trackAngleData") || key.Equals("getAnglesOfSelectedTracksButton"))
                     {
-                        if(previewMagicShape && showingFakeFloor)
+                        if (feature == Features.MagicShape)
                         {
-                            scnEditor.instance.RemakePath();
+                            if (previewMagicShape && showingFakeFloor)
+                            {
+                                scnEditor.instance.RemakePath();
+                            }
+                        }
+                        else if (feature == Features.GenerateTrack)
+                        {
+                            if (previewTrack && showingFakeFloor)
+                            {
+                                scnEditor.instance.RemakePath();
+                            }
                         }
                     }
 
@@ -103,11 +125,11 @@ namespace MappingHelper
                         {
                             case Features.TrackDisappearAnimation:
                                 propertiesToActive = PrefabProperties.TrackDisappearAnimationToActive;
-                                initializePropertyControlForFeatures(feature);
+                                
                                 break;
                             case Features.TrackAppearAnimation:
                                 propertiesToActive = PrefabProperties.TrackAppearAnimationToActive;
-                                initializePropertyControlForFeatures(feature);
+                                
                                 break;
                             case Features.MultipleTracks:
                                 switch (trackFeatures)
@@ -163,9 +185,28 @@ namespace MappingHelper
                                 break;
                             case Features.TrackExplosionAnimation:
                                 propertiesToActive = PrefabProperties.TrackExplosionAnimationToActive;
-                                initializePropertyControlForFeatures(feature);
+                                break;
+                            case Features.Lyric:
+                                switch (lyricGeneratedAs)
+                                {
+                                    case LyricGeneratedAs.BuiltInText:
+                                        if (lyricDisappearAnimation) propertiesToActive = PrefabProperties.LyricToActiveWithDisapperAnimation;
+                                        else propertiesToActive = PrefabProperties.LyricToActive;
+                                        break;
+                                    case LyricGeneratedAs.Decoration:
+                                        if (lyricDisappearAnimation) propertiesToActive = PrefabProperties.LyricToActiveWithDisapperAnimation_Decoration;
+                                        else propertiesToActive = PrefabProperties.LyricToActive_Decoration;
+                                        break;
+                                }
+                                break;
+                            case Features.GenerateTrack:
+                                propertiesToActive = PrefabProperties.GenerateTrackToActive;
+                                break;
+                            case Features.CleanInvalidFiles:
+                                propertiesToActive = PrefabProperties.CleanInvalidFilesToActive;
                                 break;
                         }
+                        initializePropertyControlForFeatures(feature);
                     }
 
                     if (key.Equals("TrackFeatures"))
@@ -231,6 +272,21 @@ namespace MappingHelper
                                 break;
                             case MagicShapeFeature.RotateMagicShape:
                                 propertiesToActive = PrefabProperties.MagicShapeRotateToActive;
+                                break;
+                        }
+                    }
+
+                    if (key.Equals("lyricDisappearAnimation") || key.Equals("lyricGeneratedAs"))
+                    {
+                        switch (lyricGeneratedAs)
+                        {
+                            case LyricGeneratedAs.BuiltInText:
+                                if (lyricDisappearAnimation) propertiesToActive = PrefabProperties.LyricToActiveWithDisapperAnimation;
+                                else propertiesToActive = PrefabProperties.LyricToActive;
+                                break;
+                            case LyricGeneratedAs.Decoration:
+                                if (lyricDisappearAnimation) propertiesToActive = PrefabProperties.LyricToActiveWithDisapperAnimation_Decoration;
+                                else propertiesToActive = PrefabProperties.LyricToActive_Decoration;
                                 break;
                         }
                     }
@@ -351,7 +407,7 @@ namespace MappingHelper
             return result;
         }
 
-        internal static void initializePropertyControlForFeatures(Features feature)
+        public static void initializePropertyControlForFeatures(Features feature)
         {
             Dictionary<string, Property> properties = scnEditor.instance.settingsPanel.panelsList.FirstOrDefault(panel => panel.name == "MappingHelperSettings").properties;
 
@@ -359,30 +415,46 @@ namespace MappingHelper
             {
                 case Features.TrackDisappearAnimation:
                     (properties["startTile"].control as PropertyControl_Tile).tileValue = new Tuple<int, TileRelativeTo>(-1, TileRelativeTo.ThisTile);
-                    MappingHelperLevelEvent.data["startTile"] = new Tuple<int, TileRelativeTo>(-1, TileRelativeTo.ThisTile);
+                    MappingHelperLevelEvent["startTile"] = new Tuple<int, TileRelativeTo>(-1, TileRelativeTo.ThisTile);
                     (properties["endTile"].control as PropertyControl_Tile).tileValue = new Tuple<int, TileRelativeTo>(-1, TileRelativeTo.ThisTile);
-                    MappingHelperLevelEvent.data["endTile"] = new Tuple<int, TileRelativeTo>(-1, TileRelativeTo.ThisTile);
+                    MappingHelperLevelEvent["endTile"] = new Tuple<int, TileRelativeTo>(-1, TileRelativeTo.ThisTile);
                     (properties["opacity"].control as PropertyControl_Text).text = "0";
-                    MappingHelperLevelEvent.data["opacity"] = 0f;
+                    MappingHelperLevelEvent["opacity"] = 0f;
+                    (properties["angleOffset"].control as PropertyControl_Text).text = "0";
+                    MappingHelperLevelEvent["angleOffset"] = 0f;
                     break;
                 case Features.TrackAppearAnimation:
                     (properties["startTile"].control as PropertyControl_Tile).tileValue = new Tuple<int, TileRelativeTo>(8, TileRelativeTo.ThisTile);
-                    MappingHelperLevelEvent.data["startTile"] = new Tuple<int, TileRelativeTo>(8, TileRelativeTo.ThisTile);
+                    MappingHelperLevelEvent["startTile"] = new Tuple<int, TileRelativeTo>(8, TileRelativeTo.ThisTile);
                     (properties["endTile"].control as PropertyControl_Tile).tileValue = new Tuple<int, TileRelativeTo>(8, TileRelativeTo.ThisTile);
-                    MappingHelperLevelEvent.data["endTile"] = new Tuple<int, TileRelativeTo>(8, TileRelativeTo.ThisTile);
+                    MappingHelperLevelEvent["endTile"] = new Tuple<int, TileRelativeTo>(8, TileRelativeTo.ThisTile);
                     (properties["opacity"].control as PropertyControl_Text).text = "100";
-                    MappingHelperLevelEvent.data["opacity"] = 100f;
+                    MappingHelperLevelEvent["opacity"] = 100f;
+                    (properties["angleOffset"].control as PropertyControl_Text).text = "0";
+                    MappingHelperLevelEvent["angleOffset"] = 0f;
                     break;
                 case Features.TrackExplosionAnimation:
                     (properties["startTile"].control as PropertyControl_Tile).tileValue = new Tuple<int, TileRelativeTo>(-4, TileRelativeTo.ThisTile);
-                    MappingHelperLevelEvent.data["startTile"] = new Tuple<int, TileRelativeTo>(-4, TileRelativeTo.ThisTile);
+                    MappingHelperLevelEvent["startTile"] = new Tuple<int, TileRelativeTo>(-4, TileRelativeTo.ThisTile);
                     (properties["endTile"].control as PropertyControl_Tile).tileValue = new Tuple<int, TileRelativeTo>(4, TileRelativeTo.ThisTile);
-                    MappingHelperLevelEvent.data["endTile"] = new Tuple<int, TileRelativeTo>(4, TileRelativeTo.ThisTile);
+                    MappingHelperLevelEvent["endTile"] = new Tuple<int, TileRelativeTo>(4, TileRelativeTo.ThisTile);
+                    (properties["angleOffset"].control as PropertyControl_Text).text = "0";
+                    MappingHelperLevelEvent["angleOffset"] = 0f;
+                    break;
+                case Features.DynamicDecoration:
+                    (properties["angleOffset"].control as PropertyControl_Text).text = "90";
+                    MappingHelperLevelEvent["angleOffset"] = 90f;
+                    break;
+                case Features.Lyric:
+                    (properties["opacity"].control as PropertyControl_Text).text = "100";
+                    MappingHelperLevelEvent["opacity"] = 100f;
+                    (properties["angleOffset"].control as PropertyControl_Text).text = "0";
+                    MappingHelperLevelEvent["angleOffset"] = 0f;
                     break;
             }
         }
 
-        internal static void initializePropertyControlForTrackAnimation(TrackAnimation trackAnimation)
+        private static void initializePropertyControlForTrackAnimation(TrackAnimation trackAnimation)
         {
             Dictionary<string, Property> properties = scnEditor.instance.settingsPanel.panelsList.FirstOrDefault(panel => panel.name == "MappingHelperSettings").properties;
 
@@ -390,21 +462,30 @@ namespace MappingHelper
             {
                 case TrackAnimation.DisappearAnimation:
                     (properties["startTile"].control as PropertyControl_Tile).tileValue = new Tuple<int, TileRelativeTo>(-1, TileRelativeTo.ThisTile);
-                    MappingHelperLevelEvent.data["startTile"] = new Tuple<int, TileRelativeTo>(-1, TileRelativeTo.ThisTile);
+                    MappingHelperLevelEvent["startTile"] = new Tuple<int, TileRelativeTo>(-1, TileRelativeTo.ThisTile);
                     (properties["endTile"].control as PropertyControl_Tile).tileValue = new Tuple<int, TileRelativeTo>(-1, TileRelativeTo.ThisTile);
-                    MappingHelperLevelEvent.data["endTile"] = new Tuple<int, TileRelativeTo>(-1, TileRelativeTo.ThisTile);
+                    MappingHelperLevelEvent["endTile"] = new Tuple<int, TileRelativeTo>(-1, TileRelativeTo.ThisTile);
                     (properties["opacity"].control as PropertyControl_Text).text = "0";
-                    MappingHelperLevelEvent.data["opacity"] = 0f;
+                    MappingHelperLevelEvent["opacity"] = 0f;
                     break;
                 case TrackAnimation.AppearAnimation:
                     (properties["startTile"].control as PropertyControl_Tile).tileValue = new Tuple<int, TileRelativeTo>(8, TileRelativeTo.ThisTile);
-                    MappingHelperLevelEvent.data["startTile"] = new Tuple<int, TileRelativeTo>(8, TileRelativeTo.ThisTile);
+                    MappingHelperLevelEvent["startTile"] = new Tuple<int, TileRelativeTo>(8, TileRelativeTo.ThisTile);
                     (properties["endTile"].control as PropertyControl_Tile).tileValue = new Tuple<int, TileRelativeTo>(8, TileRelativeTo.ThisTile);
-                    MappingHelperLevelEvent.data["endTile"] = new Tuple<int, TileRelativeTo>(8, TileRelativeTo.ThisTile);
+                    MappingHelperLevelEvent["endTile"] = new Tuple<int, TileRelativeTo>(8, TileRelativeTo.ThisTile);
                     (properties["opacity"].control as PropertyControl_Text).text = "100";
-                    MappingHelperLevelEvent.data["opacity"] = 100f;
+                    MappingHelperLevelEvent["opacity"] = 100f;
                     break;
             }
+        }
+
+        private static void initializeLyricDecoration()
+        {
+            Dictionary<string, Property> properties = scnEditor.instance.settingsPanel.panelsList.FirstOrDefault(panel => panel.name == "MappingHelperSettings").properties;
+
+            (properties["strokeSize"].control as PropertyControl_Slider).UpdateSliderValue(MappingHelperLevelEvent["strokeSize"]);
+            (properties["shadowSpread"].control as PropertyControl_Slider).UpdateSliderValue(MappingHelperLevelEvent["shadowSpread"]);
+            (properties["shadowDensity"].control as PropertyControl_Slider).UpdateSliderValue(MappingHelperLevelEvent["shadowDensity"]);
         }
 
 
@@ -413,23 +494,68 @@ namespace MappingHelper
             LevelEvent levelEvent = GetEvent((LevelEventType)MappingHelper.type);
             if (levelEvent == null)
                 return;
+            Features feature = levelEvent.Get<Features>("FeaturesOption");
 
-            Features feature = (Features)levelEvent.data["FeaturesOption"];
-            MagicShapeFeature magicShapeFeature = (MagicShapeFeature)levelEvent.data["magicShapeFeature"];
-            bool previewMagicShape = (bool)levelEvent.data["previewMagicShape"];
-            if (NowIsOnFocused && feature == Features.MagicShape && magicShapeFeature == MagicShapeFeature.CreateMagicShape)
+            if (feature == Features.MagicShape)
             {
-                Patches.FakeFloor.enabled = true;
-                if (previewMagicShape)
+                MagicShapeFeature magicShapeFeature = levelEvent.Get<MagicShapeFeature>("magicShapeFeature");
+                bool previewMagicShape = levelEvent.Get<bool>("previewMagicShape");
+                if (NowIsOnFocused && magicShapeFeature == MagicShapeFeature.CreateMagicShape && feature==Features.MagicShape)
                 {
-                    if (!showingFakeFloor)
+                    Patches.FakeFloor.enabled = true;
+                    if (previewMagicShape)
                     {
-                        scnEditor.instance.RemakePath();
-                        showingFakeFloor = true;
+                        if (!showingFakeFloor)
+                        {
+                            scnEditor.instance.RemakePath();
+                            showingFakeFloor = true;
+                        }
+                    }
+                    else
+                    {
+                        if (showingFakeFloor)
+                        {
+                            scnEditor.instance.RemakePath();
+                            showingFakeFloor = false;
+                        }
                     }
                 }
                 else
                 {
+                    Patches.FakeFloor.enabled = false;
+                    if (showingFakeFloor)
+                    {
+                        scnEditor.instance.RemakePath();
+                        showingFakeFloor = false;
+                    }
+                }
+            }
+            else if (feature == Features.GenerateTrack)
+            {
+                bool previewTrack = levelEvent.Get<bool>("previewTrack");
+                if (NowIsOnFocused && feature==Features.GenerateTrack)
+                {
+                    Patches.FakeFloor.enabled = true;
+                    if (previewTrack)
+                    {
+                        if (!showingFakeFloor)
+                        {
+                            scnEditor.instance.RemakePath();
+                            showingFakeFloor = true;
+                        }
+                    }
+                    else
+                    {
+                        if (showingFakeFloor)
+                        {
+                            scnEditor.instance.RemakePath();
+                            showingFakeFloor = false;
+                        }
+                    }
+                }
+                else
+                {
+                    Patches.FakeFloor.enabled = false;
                     if (showingFakeFloor)
                     {
                         scnEditor.instance.RemakePath();

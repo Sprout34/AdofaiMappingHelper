@@ -4,24 +4,26 @@ using ADOFAI.LevelEditor.Controls;
 using HarmonyLib;
 using MappingHelper.PropertyCollection;
 using MappingHelper.Utils;
-using SA.GoogleDoc;
-using SFB;
+using OggVorbisEncoder.Setup;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
+using System.Text.RegularExpressions;
+using System.Windows.Forms;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UI;
-using UnityEngine.Windows;
+using UnityFileDialog;
+using static MappingHelper.Patches.FakeFloor;
+
 
 namespace MappingHelper
 {
@@ -272,6 +274,120 @@ namespace MappingHelper
                 {
                     UnityEngine.Object.Destroy(comp);
                 }
+
+
+
+                Popup_Confirm.popup_confirm = UnityEngine.Object.Instantiate(scnEditor.instance.confirmPopupContainer, scnEditor.instance.popupWindow.transform);
+                foreach (var comp in Popup_Confirm.popup_confirm.GetComponentsInChildren<scrTextChanger>())
+                {
+                    UnityEngine.Object.Destroy(comp);
+                }
+
+
+
+
+                // 创建滚动确认弹窗
+                Popup_Confirm_Scroll.popup_confirm_scroll =
+                    UnityEngine.Object.Instantiate(
+                        scnEditor.instance.missingFilesPopupContainer,
+                        scnEditor.instance.popupWindow.transform
+                    );
+
+
+                // 删除 scrTextChanger
+                foreach (var comp in Popup_Confirm_Scroll.popup_confirm_scroll.GetComponentsInChildren<scrTextChanger>())
+                {
+                    UnityEngine.Object.Destroy(comp);
+                }
+
+
+                // 获取 buttonOK 位置
+                Transform oldButtonOK =
+                    Popup_Confirm_Scroll.popup_confirm_scroll.transform.Find("buttonOK");
+
+                if (oldButtonOK == null)
+                {
+                    Main.Logger.Log("找不到 buttonOK");
+                    return;
+                }
+
+
+                // 保存 buttonOK 的 RectTransform 信息
+                RectTransform oldRect =
+                    oldButtonOK.GetComponent<RectTransform>();
+
+
+                // 隐藏原来的 buttonOK
+                oldButtonOK.gameObject.SetActive(false);
+
+
+                // 创建一个临时 confirmPopupContainer
+                GameObject confirmContainer =
+                    UnityEngine.Object.Instantiate(
+                        scnEditor.instance.confirmPopupContainer,
+                        Popup_Confirm_Scroll.popup_confirm_scroll.transform
+                    );
+
+
+                // 获取两个按钮
+                Transform confirmButton =
+                    confirmContainer.transform.Find("buttonConfirm");
+
+                Transform cancelButton =
+                    confirmContainer.transform.Find("buttonCancel");
+
+
+                if (confirmButton == null || cancelButton == null)
+                {
+                    Main.Logger.Log("confirm按钮获取失败");
+                    return;
+                }
+
+
+                // 移动按钮到弹窗根节点
+                confirmButton.SetParent(
+                    Popup_Confirm_Scroll.popup_confirm_scroll.transform,
+                    false
+                );
+
+                cancelButton.SetParent(
+                    Popup_Confirm_Scroll.popup_confirm_scroll.transform,
+                    false
+                );
+
+
+                // 设置按钮位置跟随 buttonOK
+                RectTransform confirmRect =
+                    confirmButton.GetComponent<RectTransform>();
+
+                RectTransform cancelRect =
+                    cancelButton.GetComponent<RectTransform>();
+
+
+                // 让两个按钮继承 buttonOK 的布局
+                confirmRect.anchorMin = oldRect.anchorMin;
+                confirmRect.anchorMax = oldRect.anchorMax;
+                confirmRect.pivot = oldRect.pivot;
+
+                cancelRect.anchorMin = oldRect.anchorMin;
+                cancelRect.anchorMax = oldRect.anchorMax;
+                cancelRect.pivot = oldRect.pivot;
+
+
+                // Confirm 放在 buttonOK 右边位置
+                confirmRect.anchoredPosition =
+                    oldRect.anchoredPosition +
+                    new Vector2(100, 0);
+
+                // Cancel 放在 Confirm 左边左边
+                cancelRect.anchoredPosition =
+                    oldRect.anchoredPosition +
+                    new Vector2(-100, 0);
+
+
+                // 删除临时对象
+                UnityEngine.Object.Destroy(confirmContainer);
+
             }
         }
 
@@ -301,14 +417,14 @@ namespace MappingHelper
                 property.control.propertyTransform = property.GetComponent<RectTransform>();
                 property.control.Setup(true);
                 string key2 = "editor." + property.key + ".help";
-                bool flag3;
-                string helpString = RDString.GetWithCheck(key2, out flag3, null, LangSection.Translations);
-                if (flag3)
+                bool flag4;
+                string helpString = RDString.GetWithCheck(key2, out flag4, null);
+                if (flag4)
                 {
-                    Button helpButton = property.helpButton;
+                    UnityEngine.UI.Button helpButton = property.helpButton;
                     helpButton.transform.parent.gameObject.SetActive(true);
-                    string buttonText = RDString.GetWithCheck("editor." + property.key + ".help.buttonText", out flag3, null, LangSection.Translations);
-                    string buttonURL = RDString.GetWithCheck("editor." + property.key + ".help.buttonURL", out flag3, null, LangSection.Translations);
+                    string buttonText = RDString.GetWithCheck("editor." + property.key + ".help.buttonText", out flag4, null);
+                    string buttonURL = RDString.GetWithCheck("editor." + property.key + ".help.buttonURL", out flag4, null);
                     helpButton.onClick.AddListener(delegate ()
                     {
                         ADOBase.editor.ShowPropertyHelp(true, helpButton.transform, helpString, buttonText, buttonURL);
@@ -321,7 +437,7 @@ namespace MappingHelper
                     property.control.randomControl.propertyInfo = levelEventInfo.propertiesInfo[randValueKey];
                     property.control.randomControl.propertiesPanel = __instance;
                     property.control.randomControl.Setup(true);
-                    Button randomButton = property.randomButton;
+                    UnityEngine.UI.Button randomButton = property.randomButton;
                     randomButton.gameObject.SetActive(true);
                     randomButton.onClick.AddListener(delegate ()
                     {
@@ -336,15 +452,15 @@ namespace MappingHelper
                     bool isFake = __instance.inspectorPanel.selectedEvent.isFake;
                     using (new SaveStateScope(ADOBase.editor, false, true, false))
                     {
-                        bool flag5;
-                        bool flag4 = __instance.inspectorPanel.selectedEvent.disabled.TryGetValue(propertyKey, out flag5) && !flag5;
-                        __instance.inspectorPanel.selectedEvent.disabled[propertyKey] = flag4;
-                        property.offText.SetActive(flag4);
-                        property.enabledCheckmark.SetActive(!flag4);
-                        property.control.gameObject.SetActive(!flag4);
+                        bool flag6;
+                        bool flag5 = __instance.inspectorPanel.selectedEvent.disabled.TryGetValue(propertyKey, out flag6) && !flag6;
+                        __instance.inspectorPanel.selectedEvent.disabled[propertyKey] = flag5;
+                        property.offText.SetActive(flag5);
+                        property.enabledCheckmark.SetActive(!flag5);
+                        property.control.gameObject.SetActive(!flag5);
                         property.control.OnValueChange();
                         MethodInfo method = AccessTools.Method(typeof(PropertiesPanel), "UpdateEnabledButton");
-                        method.Invoke(__instance, new object[] { property, flag4 });
+                        method.Invoke(__instance, new object[] { property, flag5 });
                         if (isFake)
                         {
                             property.enabledCheckmark.transform.parent.gameObject.SetActive(false);
@@ -356,7 +472,7 @@ namespace MappingHelper
                 });
                 if (property.info.canBeDisabled)
                 {
-                    Button component4 = property.enabledButton.GetComponent<Button>();
+                    UnityEngine.UI.Button component4 = property.enabledButton.GetComponent<UnityEngine.UI.Button>();
                     ColorBlock colors = component4.colors;
                     colors.selectedColor = InspectorPanel.selectionColor;
                     component4.colors = colors;
@@ -390,7 +506,7 @@ namespace MappingHelper
                 if (!(info.value_default is UnityAction action))
                     return;
 
-                Button button = __instance.Get<Button>("exportButton");
+                UnityEngine.UI.Button button = __instance.Get<UnityEngine.UI.Button>("exportButton");
                 
                 button.onClick.RemoveAllListeners();
                 button.onClick.AddListener(action);
@@ -409,10 +525,10 @@ namespace MappingHelper
             }
         }
 
-        [HarmonyPatch(typeof(Button), "OnSubmit")]
+        [HarmonyPatch(typeof(UnityEngine.UI.Button), "OnSubmit")]
         class Patch_ButtonOnSubmit
         {
-            public static bool Prefix(Button __instance, BaseEventData eventData)
+            public static bool Prefix(UnityEngine.UI.Button __instance, BaseEventData eventData)
             {
                 if (__instance.name.Contains("createButton"))
                     return false;
@@ -482,7 +598,10 @@ namespace MappingHelper
             {
                 if (__instance.GetType().Equals(typeof(ADOFAI.LevelEditor.Controls.PropertyControl_Toggle)) && __instance.Get<bool>("settingText"))
                     return;
-                ___propertiesPanel.inspectorPanel.selectedEvent.data.TryGetValue(___propertyInfo.name, out __state);
+                ___propertiesPanel.inspectorPanel.selectedEvent.TryGet<object>(
+                    ___propertyInfo.name,
+                    out __state
+                );
             }
 
             internal static void Postfix(object __instance, PropertiesPanel ___propertiesPanel, ADOFAI.PropertyInfo ___propertyInfo, object __state)
@@ -604,7 +723,7 @@ namespace MappingHelper
             internal static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
             {
                 List<CodeInstruction> codes = new List<CodeInstruction>();
-                Label? targetLabel1 = null;
+                System.Reflection.Emit.Label? targetLabel1 = null;
                 for (int i = 0; i < instructions.Count(); i++)
                 {
                     CodeInstruction code = instructions.ElementAt(i);
@@ -612,12 +731,12 @@ namespace MappingHelper
                     {
                         CodeInstruction nextCode = instructions.ElementAt(i + 1);
                         if (nextCode.opcode == OpCodes.Brtrue_S)
-                            targetLabel1 = (Label)nextCode.operand;
+                            targetLabel1 = (System.Reflection.Emit.Label)nextCode.operand;
                     }
                     if (targetLabel1.HasValue && code.labels.Contains(targetLabel1.Value))
                     {
-                        Label label1 = generator.DefineLabel();
-                        Label label2 = (Label)instructions.ElementAt(i - 1).operand;
+                        System.Reflection.Emit.Label label1 = generator.DefineLabel();
+                        System.Reflection.Emit.Label label2 = (System.Reflection.Emit.Label)instructions.ElementAt(i - 1).operand;
                         codes.Add(new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.ExtractLabels()));
                         codes.Add(new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(ADOFAI.LevelEditor.Controls.PropertyControl), "propertyInfo")));
                         codes.Add(new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(ADOFAI.PropertyInfo), "enumType")));
@@ -657,8 +776,8 @@ namespace MappingHelper
                         {
                             codes.RemoveAt(codes.Count() - 2);
                             codes.RemoveAt(codes.Count() - 1);
-                            Label label1 = generator.DefineLabel();
-                            Label label2 = generator.DefineLabel();
+                            System.Reflection.Emit.Label label1 = generator.DefineLabel();
+                            System.Reflection.Emit.Label label2 = generator.DefineLabel();
                             codes.Add(new CodeInstruction(OpCodes.Ldarg_0));
                             codes.Add(new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(ADOFAI.LevelEditor.Controls.PropertyControl), "propertyInfo")));
                             codes.Add(new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(ADOFAI.PropertyInfo), "enumType")));
@@ -701,22 +820,30 @@ namespace MappingHelper
                     {
                         __instance.fileType = (ADOFAI.FileType)FileTypeExtension.Directory;
                     }
+                    if (fileTypeStr != null && fileTypeStr.Equals("TTF"))
+                    {
+                        __instance.fileType = (ADOFAI.FileType)FileTypeExtension.TTF;
+                    }
                 }
             }
         }
 
-        [HarmonyPatch(typeof(ADOFAI.LevelEditor.Controls.PropertyControl_File), "BrowseFile")]
+        [HarmonyPatch(typeof(BrowseButton), "BrowseFile")]
         internal static class BrowseFilePatch
         {
-            public static bool Prefix(PropertyControl_File __instance)
+            public static bool Prefix(BrowseButton __instance)
             {
-                bool levelSaved = (bool)AccessTools.Method(typeof(PropertyControl_File), "CheckIfLevelIsSaved").Invoke(__instance, null);
+                bool levelSaved = (bool)AccessTools.Method(typeof(BrowseButton), "CheckIfLevelIsSaved").Invoke(__instance, null);
                 if (!levelSaved)
                 {
                     return true; 
                 }
 
-                ADOFAI.FileType fileType = __instance.propertyInfo.fileType;
+                FieldInfo ownerField = AccessTools.Field(typeof(BrowseButton), "owner");
+                PropertyControl owner = (PropertyControl)ownerField.GetValue(__instance);
+
+                ADOFAI.FileType fileType = owner.propertyInfo.fileType;
+
                 if (fileType == (ADOFAI.FileType)FileTypeExtension.Directory)
                 {
                     scnGame instance = scnGame.instance;
@@ -724,15 +851,13 @@ namespace MappingHelper
                     {
                         return false;
                     }
-                    string[] paths = StandaloneFileBrowser.OpenFolderPanel("", Persistence.GetLastUsedFolder(), false);
-                    if (paths.Length == 0 || string.IsNullOrEmpty(paths[0]))
+                    string path = FileBrowser.PickFolder(Persistence.GetLastUsedFolder(),title:Main.Localizations.GetValue("mh.selectDirectory"));
+                    string directoryName = Path.GetFileNameWithoutExtension(path);
+                    string levelDirectory = Path.GetDirectoryName(instance.levelPath);
+                    if (string.IsNullOrEmpty(levelDirectory))
                     {
                         return false;
                     }
-
-                    string path = Uri.UnescapeDataString(paths[0]);
-                    string directoryName = Path.GetFileNameWithoutExtension(path);
-                    string levelDirectory = Path.GetDirectoryName(instance.levelPath);
                     string targetDir = Path.Combine(levelDirectory, directoryName);
                     string sourceDir = path;
                     if (!Directory.Exists(targetDir))
@@ -759,17 +884,62 @@ namespace MappingHelper
                         }
                     }
 
-                    FieldInfo filenameField = AccessTools.Field(typeof(PropertyControl_File), "filename");
-                    LevelEvent selectedEvent2 = __instance.propertiesPanel.inspectorPanel.selectedEvent;
-                    filenameField.SetValue(__instance, path);
-                    selectedEvent2[__instance.propertyInfo.name] = path;
-                    __instance.inputField.text = path;
-                    var ToggleOthersEnabledMethod = AccessTools.Method(typeof(PropertyControl_File).BaseType, "ToggleOthersEnabled");
-                    ToggleOthersEnabledMethod.Invoke(__instance, null);
+                    LevelEvent selectedEvent2 = owner.propertiesPanel.inspectorPanel.selectedEvent;
 
-                    var processMethod = AccessTools.Method(typeof(PropertyControl_File), "ProcessFile");
-                    processMethod.Invoke(__instance, new object[] { "IM FREE", (ADOFAI.FileType)FileTypeExtension.Directory });
+                    //owner.browseButton.filename = directoryName;
+                    FieldInfo filenameField = AccessTools.Field(typeof(BrowseButton), "filename");
+                    filenameField.SetValue(__instance, directoryName);
 
+                    //selectedEvent2[owner.propertyInfo.name] = owner.browseButton.filename;
+                    selectedEvent2[owner.propertyInfo.name] = directoryName;
+
+                    //owner.inputField.text = owner.browseButton.filename;
+                    FieldInfo inputFieldField = AccessTools.Field(typeof(BrowseButton), "inputField");
+                    TMP_InputField inputField = (TMP_InputField)inputFieldField.GetValue(__instance);
+                    inputField.text = directoryName;
+
+                    owner.ToggleOthersEnabled();
+                    Main.activeChilden();
+                    return false;
+                }
+
+
+                if (fileType == (ADOFAI.FileType)FileTypeExtension.TTF)
+                {
+                    scnGame instance = scnGame.instance;
+                    if (string.IsNullOrEmpty(instance.levelPath))
+                    {
+                        return false;
+                    }
+                    // 调用文件选择器
+                    string filename = RDEditorUtils.ShowFileSelector(
+                        Main.Localizations.GetValue("mh.selectFont"),
+                        "Font Files",
+                        new string[] { "ttf", "otf", "ttc"},
+                        "Save the level first",
+                        -1L  // 无大小限制
+                    );
+
+                    // 检查返回值
+                    if (filename == null)
+                    {
+                        Main.Logger.Log("selection cancelled");
+                        return false;
+                    }
+
+                    LevelEvent selectedEvent2 = owner.propertiesPanel.inspectorPanel.selectedEvent;
+
+                    FieldInfo filenameField = AccessTools.Field(typeof(BrowseButton), "filename");
+                    filenameField.SetValue(__instance, filename);
+
+                    FieldInfo inputFieldField = AccessTools.Field(typeof(BrowseButton), "inputField");
+                    TMP_InputField inputField = (TMP_InputField)inputFieldField.GetValue(__instance);
+                    inputField.text = filename;
+
+                    selectedEvent2[owner.propertyInfo.name] = filename;
+
+                    owner.ToggleOthersEnabled();
+                    Main.activeChilden();
                     return false;
                 }
 
@@ -784,6 +954,7 @@ namespace MappingHelper
             public static bool playing = false;
             public static bool enabled = false;
             public static bool nowPleaseMoveTheFakeFloor = false;
+            public static bool goCreateFakeFloor = true;
             public static int GetIndex(object data)
             {
                 Tuple<int, TileRelativeTo> tuple = (Tuple<int, TileRelativeTo>)data;
@@ -804,6 +975,12 @@ namespace MappingHelper
             {
                 return (90.0 - Deg) * Mathf.Deg2Rad;
             }
+            public static float correctDirection(float direction)
+            {
+                direction %= 360f;
+                if (direction < 0) direction += 360f;
+                return direction;
+            }
 
             [HarmonyPatch(typeof(scrLevelMaker), "MakeLevel")]
             public static class CreateFakeFloor
@@ -818,15 +995,32 @@ namespace MappingHelper
 
                     if (ADOBase.lm.isOldLevel) return;
 
-                    if (scnEditor.instance != null && !playing && enabled)
+                    if (scnEditor.instance != null && !playing && enabled && goCreateFakeFloor)
                     {
                         LevelEvent levelEvent = Main.GetEvent((LevelEventType)Main.MappingHelper.type);
                         if (levelEvent == null)
                             return;
-                        
-                        bool previewMagicShape = (bool)levelEvent.data["previewMagicShape"];
-                        if (!previewMagicShape)
-                            return;
+
+                        Features feature = levelEvent.Get<Features>("FeaturesOption");
+                        bool previewMagicShape;
+                        bool previewTrack;
+                        if (feature == Features.MagicShape)
+                        {
+                            previewMagicShape = levelEvent.Get<bool>("previewMagicShape");
+                            if (!previewMagicShape)
+                                return;
+                        }
+                        else if (feature == Features.GenerateTrack)
+                        {
+                            previewTrack = levelEvent.Get<bool>("previewTrack");
+                            if (!previewTrack)
+                                return;
+
+                            if (scnEditor.instance.selectedFloors.Count == 0) return;
+                            if (scnEditor.instance.selectedFloors[scnEditor.instance.selectedFloors.Count - 1].seqID + 1 >= scrLevelMaker.instance.listFloors.Count)
+                                return;
+                        }
+                        else return;
 
                         scnEditor.instance.ApplyEventsToFloors();
 
@@ -835,68 +1029,174 @@ namespace MappingHelper
                         int affectTileRangeTo = affectedRange.Item2;
                         if (affectTileRangeFrom == -1 || affectTileRangeTo == -1) return;
 
-                        int vertexCount = (int)levelEvent.data["vertexCount"];
-                        bool useReverseAngle = (bool)levelEvent.data["useReverseAngle"];
-
                         scrFloor lastAffectedFloor = scrLevelMaker.instance.listFloors[affectTileRangeTo];
-
-                        int order = 100 + scrLevelMaker.instance.listFloors.Count + (affectTileRangeTo - affectTileRangeFrom + 1) * (vertexCount - 1);
-                        for (int i = 0; i <= affectTileRangeTo; i++)
+                        int vertexCount = levelEvent.Get<int>("vertexCount");
+                        bool useReverseAngle = levelEvent.Get<bool>("useReverseAngle");
+                        int generationCount = levelEvent.Get<int>("generationCount");
+                        int order=100;
+                        if (feature == Features.MagicShape)
                         {
-                            scrLevelMaker.instance.listFloors[i].SetSortingOrder(order * 5);
-                            order--;
+                            order = 100 + scrLevelMaker.instance.listFloors.Count + (affectTileRangeTo - affectTileRangeFrom + 1) * (vertexCount - 1);
+                        }
+                        else if (feature==Features.GenerateTrack)
+                        {
+                            order = 100 + scrLevelMaker.instance.listFloors.Count + (affectTileRangeTo - affectTileRangeFrom + 1) * (generationCount - 1);
                         }
 
+                        for (int i = 0; i <= affectTileRangeTo; i++)
+                            {
+                                scrLevelMaker.instance.listFloors[i].SetSortingOrder(order * 5);
+                                order--;
+                            }
+                        
                         Vector3 thisPosition = lastAffectedFloor.transform.position;
                         scrFloor prev = lastAffectedFloor;
                         FeaturesFunction.AngleData[] angles = FeaturesFunction.getAnglesData();
-
-                        for (int i = 1; i < vertexCount; i++)
+                        
+                        if (feature == Features.MagicShape)
                         {
-                            for (int j = affectTileRangeFrom; j < affectTileRangeTo; j++)
+                            for (int i = 1; i < vertexCount; i++)
                             {
-                                float direction = angles[j].head + (360f / vertexCount * i * (useReverseAngle ? -1 : 1));
-                                thisPosition += getNextPosition(direction);
-                                prev.exitangle = AdofaiDegToRad(direction);
+                                for (int j = affectTileRangeFrom; j < affectTileRangeTo; j++)
+                                {
+                                    float direction = angles[j].head + (360f / vertexCount * i * (useReverseAngle ? -1 : 1));
+                                    thisPosition += getNextPosition(angles[j].angle == 999f ? (direction + 180) % 360 : direction);
+                                    prev.exitangle = angles[j].angle == 999 ? prev.entryangle : AdofaiDegToRad(direction);
+                                    GameObject obj = UnityEngine.Object.Instantiate(ADOBase.lm.meshFloor, thisPosition, Quaternion.identity);
+                                    obj.name = $"FakeFloor_{i}.{j}";
+                                    scrFloor floor = obj.GetComponent<scrFloor>();
+                                    floor.entryangle = angles[j].angle == 999 ? AdofaiDegToRad(direction) : AdofaiDegToRad((direction + 180) % 360);
+                                    floor.floorRenderer.color = new Color(1, 1, 1, 0.5f);
+                                    floor.editorNumText.letterText.gameObject.SetActive(false);
+                                    floor.SetSortingOrder(order * 5);
+                                    order--;
+                                    prev.midSpin = (angles[j].angle == 999f);
+                                    prev.nextfloor = floor;
+                                    fakeFloors.Add(floor);
+                                    prev.UpdateAngle();
+                                    prev = floor;
+                                }
+                            }
+                            for (int i = affectTileRangeTo + 1; i < angles.Length; i++)
+                            {
+                                scrLevelMaker.instance.listFloors[i].SetSortingOrder(order * 5);
+                                order--;
+                            }
+
+                            if (scrLevelMaker.instance.listFloors.Count > affectTileRangeTo + 1)
+                            {
+                                float direction = angles[affectTileRangeTo + 1].tail;
+
+                                prev.exitangle = AdofaiDegToRad((direction + 180) % 360);
+                                prev.UpdateAngle();
+                            }
+                            else if (scrLevelMaker.instance.listFloors.Count == affectTileRangeTo + 1 && scnEditor.instance.selectedFloors.Count > 1)
+                            {
+                                float head = angles[affectTileRangeTo].head + (360f / vertexCount) * (vertexCount - 1);
+
+                                prev.exitangle = AdofaiDegToRad(head);
+                                prev.entryangle = AdofaiDegToRad((head + 180) % 360);
+                                prev.UpdateAngle();
+                            }
+                        }
+                        else if (feature == Features.GenerateTrack)
+                        {
+                            thisPosition += getNextPosition(angles[affectTileRangeTo].head);
+                            float prevHead = angles[affectTileRangeTo].head;
+
+                            float tail_GT = (angles[affectTileRangeTo].head + 180) % 360;
+                            bool isCCW_GT = scrLevelMaker.instance.listFloors[affectTileRangeTo].isCCW;
+                            bool isCCW_GT_First = isCCW_GT;
+                            string trackAngleData = levelEvent.Get<string>("trackAngleData");
+
+                            var matches = Regex.Matches(trackAngleData, @"(-?\d+(?:\.\d+)?)([Tt]?)");
+
+                            List<float> processedTrackAngleData = new List<float>();
+                            List<bool> goTwirl = new List<bool>();
+
+                            foreach (Match match in matches)
+                            {
+                                // 角度
+                                processedTrackAngleData.Add(float.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture));
+                                // 是否有 Twirl
+                                goTwirl.Add(match.Groups[2].Length > 0);
+                            }
+
+                            for (int i = 0; i < processedTrackAngleData.Count; i++)
+                            {
+                                float value = processedTrackAngleData[i] % 360;
+
+                                if (value <= 0)
+                                    value += 360;
+
+                                processedTrackAngleData[i] = value;
+                            }
+
+                            List<float> newTrack_GT = new List<float>();
+                            List<bool> newTrack_GT_goTwirl = new List<bool>();
+
+                            for (int i = 0; i < generationCount; i++)
+                            {
+                                newTrack_GT.AddRange(processedTrackAngleData);
+                                newTrack_GT_goTwirl.AddRange(goTwirl);
+                            }
+
+                            for (int i = 0; i < newTrack_GT.Count; i++)
+                            {
+                                if (newTrack_GT_goTwirl[i])
+                                {
+                                    isCCW_GT = !isCCW_GT;
+                                    isCCW_GT_First = !isCCW_GT_First;
+                                }
+
+                                newTrack_GT[i] = correctDirection(tail_GT + (isCCW_GT ? newTrack_GT[i] : -newTrack_GT[i]));
+                                tail_GT = (newTrack_GT[i] + 180) % 360;
+
+                                float direction = newTrack_GT[i];
                                 GameObject obj = UnityEngine.Object.Instantiate(ADOBase.lm.meshFloor, thisPosition, Quaternion.identity);
-                                obj.name = $"FakeFloor_{i}.{j}";
+                                obj.name = $"FakeFloor_{i}";
                                 scrFloor floor = obj.GetComponent<scrFloor>();
-                                floor.entryangle = AdofaiDegToRad((direction + 180) % 360);
+                                floor.exitangle = AdofaiDegToRad(direction);
+                                floor.entryangle = AdofaiDegToRad((prevHead + 180) % 360);
                                 floor.floorRenderer.color = new Color(1, 1, 1, 0.5f);
                                 floor.editorNumText.letterText.gameObject.SetActive(false);
                                 floor.SetSortingOrder(order * 5);
+
+                                if (newTrack_GT_goTwirl[i])
+                                {
+                                    floor.floorIcon = FloorIcon.Swirl;
+                                    floor.isSwirl = true;
+                                    floor.isCCW = isCCW_GT_First;
+                                }
+
                                 order--;
-                                prev.midSpin = angles[j].angle == 999;
-                                prev.nextfloor = floor;
                                 fakeFloors.Add(floor);
-                                
-                                prev.UpdateAngle();
+                                if (i != 0)
+                                {
+                                    prev.nextfloor = floor;
+                                    prev.UpdateAngle();
+                                }
                                 prev = floor;
+                                prevHead = direction;
+                                thisPosition += getNextPosition(direction);
+                            }
+
+                            for (int i = affectTileRangeTo + 1; i < angles.Length; i++)
+                            {
+                                scrLevelMaker.instance.listFloors[i].SetSortingOrder(order * 5);
+                                order--;
+                            }
+
+                            if (scrLevelMaker.instance.listFloors.Count > affectTileRangeTo + 1)
+                            {
+                                prev.exitangle = AdofaiDegToRad(prevHead);
+                                prev.nextfloor = scrLevelMaker.instance.listFloors[affectTileRangeTo+1];
+                                prev.UpdateAngle();
+
+                                scrLevelMaker.instance.listFloors[affectTileRangeTo + 1].entryangle = AdofaiDegToRad((prevHead + 180) % 360);
                             }
                         }
-
-                        for (int i = affectTileRangeTo + 1; i < angles.Length; i++)
-                        {
-                            scrLevelMaker.instance.listFloors[i].SetSortingOrder(order * 5);
-                            order--;
-                        }
-
-                        if (scrLevelMaker.instance.listFloors.Count > affectTileRangeTo + 1)
-                        {
-                            float direction = angles[affectTileRangeTo + 1].tail;
-
-                            prev.exitangle = AdofaiDegToRad((direction + 180) % 360);
-                            prev.UpdateAngle();
-                        }
-                        else if (scrLevelMaker.instance.listFloors.Count == affectTileRangeTo + 1 && scnEditor.instance.selectedFloors.Count > 1)
-                        {
-                            float head = angles[affectTileRangeTo].head + (360f / vertexCount) * (vertexCount - 1);
-
-                            prev.exitangle = AdofaiDegToRad(head);
-                            prev.entryangle = AdofaiDegToRad((head + 180) % 360);
-                            prev.UpdateAngle();
-                        }
-
+                        
                         nowPleaseMoveTheFakeFloor = true;
                     }
                 }
@@ -923,7 +1223,17 @@ namespace MappingHelper
 
                             if (scrLevelMaker.instance.listFloors.Count > affectTileRangeTo + 1)
                             {
-                                Vector3 vector = fakeFloors[fakeFloors.Count - 1].transform.position - scrLevelMaker.instance.listFloors[affectTileRangeTo].transform.position;
+                                Features feature = levelEvent.Get<Features>("FeaturesOption");
+                                Vector3 vector = Vector3.zero;
+                                if (feature==Features.MagicShape)
+                                {
+                                    vector = fakeFloors[fakeFloors.Count - 1].transform.position - scrLevelMaker.instance.listFloors[affectTileRangeTo].transform.position;
+                                }
+                                else if (feature==Features.GenerateTrack)
+                                {
+                                    vector = fakeFloors[fakeFloors.Count - 1].transform.position - scrLevelMaker.instance.listFloors[affectTileRangeTo+1].transform.position + getNextPosition(AdofaiRadToDeg(fakeFloors[fakeFloors.Count - 1].exitangle));
+                                }
+
                                 for (int i = affectTileRangeTo + 1; i < scrLevelMaker.instance.listFloors.Count; i++)
                                 {
                                     scrLevelMaker.instance.listFloors[i].transform.position += vector;
@@ -933,6 +1243,52 @@ namespace MappingHelper
                     }
                 }
             }
+
+            [HarmonyPatch(typeof(scnEditor), "SelectFloor")]
+            public static class GenerateTrack_SelectFloorPatch
+            {
+                public static bool goPostfix = false;
+                public static void Prefix()
+                {
+                    if (scnEditor.instance != null && !playing && enabled)
+                    {
+                        LevelEvent levelEvent = Main.GetEvent((LevelEventType)Main.MappingHelper.type);
+                        if (levelEvent == null)
+                            return;
+
+                        Features feature = levelEvent.Get<Features>("FeaturesOption");
+                        bool previewTrack;
+                        if (feature == Features.GenerateTrack)
+                        {
+                            previewTrack = levelEvent.Get<bool>("previewTrack");
+                            if (!previewTrack)
+                                return;
+
+                            foreach (var go in fakeFloors)
+                            {
+                                UnityEngine.Object.DestroyImmediate(go.gameObject);
+                            }
+                            fakeFloors.Clear();
+
+                            goCreateFakeFloor = false;
+                            scnEditor.instance.RemakePath();
+                            goPostfix = true;
+                        }
+                    }
+                }
+
+                public static void Postfix()
+                {
+                    if (goPostfix)
+                    {
+                        goCreateFakeFloor = true;
+                        scnEditor.instance.RemakePath();
+                        goPostfix = false;
+                    }
+                    
+                }
+            }
+
 
             [HarmonyPatch(typeof(scnEditor), "Play")]
             public static class PlayPatch
@@ -996,10 +1352,12 @@ namespace MappingHelper
                 LevelEvent levelEvent = Main.GetEvent((LevelEventType)Main.MappingHelper.type);
                 if (levelEvent == null)
                     return;
-                Features feature = (Features)levelEvent.data["FeaturesOption"];
-                MagicShapeFeature magicShapeFeature = (MagicShapeFeature)levelEvent.data["magicShapeFeature"];
-                bool previewMagicShape = (bool)levelEvent.data["previewMagicShape"];
-                AffectAt affectAt = (AffectAt)levelEvent.data["affectAt"];
+
+
+                Features feature = levelEvent.Get<Features>("FeaturesOption");
+                MagicShapeFeature magicShapeFeature = levelEvent.Get<MagicShapeFeature>("magicShapeFeature");
+                bool previewMagicShape = levelEvent.Get<bool>("previewMagicShape");
+                AffectAt affectAt = levelEvent.Get<AffectAt>("affectAt");
 
                 if (Main.NowIsOnFocused && feature == Features.MagicShape && magicShapeFeature == MagicShapeFeature.CreateMagicShape && previewMagicShape && Main.showingFakeFloor && affectAt == AffectAt.SelectedTiles)
                 {
@@ -1012,6 +1370,71 @@ namespace MappingHelper
                         Main.lastSelectedFloorsCount = scnEditor.instance.selectedFloors.Count;
                     }
                 }
+            }
+        }
+
+
+        [HarmonyPatch(typeof(scnEditor), "SelectFloor")]
+        public static class GenerateTrackShowFakeFloorPatch
+        {
+            public static void Postfix()
+            {
+                LevelEvent levelEvent = Main.GetEvent((LevelEventType)Main.MappingHelper.type);
+                if (levelEvent == null)
+                    return;
+
+                Features feature = levelEvent.Get<Features>("FeaturesOption");
+                bool previewTrack = levelEvent.Get<bool>("previewTrack");
+                if (feature == Features.GenerateTrack && previewTrack && scnEditor.instance != null)
+                    scnEditor.instance.RemakePath();
+            }
+        }
+
+        [HarmonyPatch(typeof(scnEditor), "MultiSelectFloors")]
+        public static class GenerateTrackShowFakeFloorPatch2
+        {
+            public static void Postfix()
+            {
+                LevelEvent levelEvent = Main.GetEvent((LevelEventType)Main.MappingHelper.type);
+                if (levelEvent == null)
+                    return;
+
+                Features feature = levelEvent.Get<Features>("FeaturesOption");
+                bool previewTrack = levelEvent.Get<bool>("previewTrack");
+                if (feature == Features.GenerateTrack && previewTrack && scnEditor.instance != null)
+                    scnEditor.instance.RemakePath();
+            }
+        }
+
+        [HarmonyPatch(typeof(scnEditor), "DeselectFloors")]
+        public static class GenerateTrackShowFakeFloorPatch3
+        {
+            public static void Postfix()
+            {
+                LevelEvent levelEvent = Main.GetEvent((LevelEventType)Main.MappingHelper.type);
+                if (levelEvent == null)
+                    return;
+
+                Features feature = levelEvent.Get<Features>("FeaturesOption");
+                bool previewTrack = levelEvent.Get<bool>("previewTrack");
+                if (feature == Features.GenerateTrack && previewTrack && scnEditor.instance != null)
+                    scnEditor.instance.RemakePath();
+            }
+        }
+
+        [HarmonyPatch(typeof(scnEditor), "AddEventAtSelected")]
+        public static class AddEventAtSelectedPatch
+        {
+            public static void Postfix(LevelEventType eventType)
+            {
+                LevelEvent levelEvent = Main.GetEvent((LevelEventType)Main.MappingHelper.type);
+                if (levelEvent == null)
+                    return;
+
+                Features feature = levelEvent.Get<Features>("FeaturesOption");
+                bool previewTrack = levelEvent.Get<bool>("previewTrack");
+                if (feature == Features.GenerateTrack && previewTrack && scnEditor.instance != null)
+                    scnEditor.instance.RemakePath();
             }
         }
     }
