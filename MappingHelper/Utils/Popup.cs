@@ -57,25 +57,6 @@ namespace MappingHelper.Utils
                 onCancel?.Invoke();
                 scnEditor.instance.ShowPopup(false, (scnEditor.PopupType)234, false);
             });
-
-
-            //GameObject test = UnityEngine.Object.Instantiate(scnEditor.instance.missingFilesPopupContainer, scnEditor.instance.popupWindow.transform);
-            //GameObject test = popup_confirm;
-            //StringBuilder sb = new StringBuilder();
-            //sb.AppendLine($"=== {test.name} 的直接子对象 ===");
-
-            //foreach (Transform child in test.transform)
-            //{
-            //    Component[] components = child.GetComponents<Component>();
-            //    string componentList = "";
-            //    foreach (var comp in components)
-            //    {
-            //        componentList += comp.GetType().Name + " ";
-            //    }
-            //    sb.AppendLine($"- {child.name} (Components: {componentList})");
-            //}
-
-            //Main.Logger.Log(sb.ToString());
         }
     }
 
